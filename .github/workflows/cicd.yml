@@ -1,0 +1,111 @@
+name: Python CI with Build, Tests, and Execution
+
+on:  
+  push:  
+    branches: [ main ]  
+  pull_request:  
+    branches: [ main ]  
+
+jobs:  
+  build:  
+    name: Build Stage  
+    runs-on: ubuntu-latest  
+
+    steps:  
+      - name: Checkout Repository  
+        uses: actions/checkout@v4  
+
+      - name: Set up Python  
+        uses: actions/setup-python@v4  
+        with:  
+          python-version: '3.10'  
+
+      - name: Install Dependencies  
+        run: |  
+          python -m pip install --upgrade pip  
+          if [ -f requirements.txt ]; then pip install -r requirements.txt; fi  
+
+      # One-line script  
+      - name: Run a one-line script  
+        run: echo "Hello, world!"  
+
+      # Multi-line script  
+      - name: Run a multi-line script  
+        run: |  
+          echo "Starting build process..."  
+          echo "Add other actions to build,"
+          echo "test, and deploy your project."  
+
+      - name: Run Linting (Optional)  
+        run: |  
+          pip install flake8  
+          flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics  
+
+      - name: Build Python Package (if applicable)  
+        run: |  
+          if [ -f setup.py ]; then python setup.py sdist bdist_wheel; fi  
+
+  test:  
+    name: Run Tests  
+    needs: build  # Runs after build stage  
+    runs-on: ubuntu-latest  
+
+    steps:  
+      - name: Checkout Repository  
+        uses: actions/checkout@v4  
+
+      - name: Set up Python  
+        uses: actions/setup-python@v4  
+        with:  
+          python-version: '3.10'  
+
+      - name: Install Dependencies  
+        run: |  
+          python -m pip install --upgrade pip  
+          if [ -f requirements.txt ]; then pip install -r requirements.txt; fi  
+          pip install pytest  
+
+      # One-line script  
+      - name: Run a one-line script  
+        run: echo "Starting tests..."  
+
+      # Multi-line script  
+      - name: Run a multi-line script  
+        run: |  
+          echo "Running pytest tests..."
+          echo "Ensuring all tests pass before deployment."  
+
+      - name: Run Pytest  
+        run: pytest tests/ --disable-warnings --maxfail=3  
+
+  execute:  
+    name: Run Python Script  
+    needs: test  # Runs after tests pass  
+    runs-on: ubuntu-latest  
+
+    steps:  
+      - name: Checkout Repository  
+        uses: actions/checkout@v4  
+
+      - name: Set up Python  
+        uses: actions/setup-python@v4  
+        with:  
+          python-version: '3.10'  
+
+      - name: Install Dependencies  
+        run: |  
+          python -m pip install --upgrade pip  
+          if [ -f requirements.txt ]; then pip install -r requirements.txt; fi  
+
+      # One-line script  
+      - name: Run a one-line script  
+        run: echo "Starting script execution..."  
+
+      # Multi-line script  
+      - name: Run a multi-line script  
+        run: |  
+          echo "Executing Python script..."
+          echo "All stages completed successfully!"  
+
+      - name: Run Python Script  
+        run: python script.py  
