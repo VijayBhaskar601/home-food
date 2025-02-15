@@ -1,111 +1,92 @@
-name: Python CI with Build, Tests, and Execution
+name: CI/CD Pipeline
 
-on:  
-  push:  
-    branches: [ main ]  
-  pull_request:  
-    branches: [ main ]  
+on:
+  push:
+    branches:
+      - main
 
-jobs:  
-  build:  
-    name: Build Stage  
-    runs-on: ubuntu-latest  
+jobs:
+  pre-checks:
+    name: Pre-request Checks
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
 
-    steps:  
-      - name: Checkout Repository  
-        uses: actions/checkout@v4  
+      - name: Run Pre-request Checks
+        run: echo "Running pre-request checks..."
 
-      - name: Set up Python  
-        uses: actions/setup-python@v4  
-        with:  
-          python-version: '3.10'  
+  helm:
+    name: Run Helm Chart
+    needs: pre-checks
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
 
-      - name: Install Dependencies  
-        run: |  
-          python -m pip install --upgrade pip  
-          if [ -f requirements.txt ]; then pip install -r requirements.txt; fi  
+      - name: Install Helm
+        run: |
+          curl https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash
+          helm version
 
-      # One-line script  
-      - name: Run a one-line script  
-        run: echo "Hello, world!"  
+      - name: Run Helm Lint
+        run: helm lint path/to/helm-chart
 
-      # Multi-line script  
-      - name: Run a multi-line script  
-        run: |  
-          echo "Starting build process..."  
-          echo "Add other actions to build,"
-          echo "test, and deploy your project."  
+  pytest:
+    name: Run Pytest
+    needs: pre-checks
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
 
-      - name: Run Linting (Optional)  
-        run: |  
-          pip install flake8  
-          flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics  
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
 
-      - name: Build Python Package (if applicable)  
-        run: |  
-          if [ -f setup.py ]; then python setup.py sdist bdist_wheel; fi  
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
 
-  test:  
-    name: Run Tests  
-    needs: build  # Runs after build stage  
-    runs-on: ubuntu-latest  
+      - name: Run Pytest
+        run: pytest tests/ --disable-warnings --maxfail=3
 
-    steps:  
-      - name: Checkout Repository  
-        uses: actions/checkout@v4  
+  build:
+    name: Build Application
+    needs: [helm, pytest]  # Waits for both Helm and Pytest to finish
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
 
-      - name: Set up Python  
-        uses: actions/setup-python@v4  
-        with:  
-          python-version: '3.10'  
+      - name: Build Docker Image
+        run: docker build -t my-python-app .
 
-      - name: Install Dependencies  
-        run: |  
-          python -m pip install --upgrade pip  
-          if [ -f requirements.txt ]; then pip install -r requirements.txt; fi  
-          pip install pytest  
+  test:
+    name: Post-Build Test
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
 
-      # One-line script  
-      - name: Run a one-line script  
-        run: echo "Starting tests..."  
+      - name: Run Pytest Again
+        run: pytest tests/ --disable-warnings --maxfail=3
 
-      # Multi-line script  
-      - name: Run a multi-line script  
-        run: |  
-          echo "Running pytest tests..."
-          echo "Ensuring all tests pass before deployment."  
+  stage:
+    name: Staging Deployment
+    needs: test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Deploy to Staging
+        run: echo "Deploying to staging environment..."
 
-      - name: Run Pytest  
-        run: pytest tests/ --disable-warnings --maxfail=3  
-
-  execute:  
-    name: Run Python Script  
-    needs: test  # Runs after tests pass  
-    runs-on: ubuntu-latest  
-
-    steps:  
-      - name: Checkout Repository  
-        uses: actions/checkout@v4  
-
-      - name: Set up Python  
-        uses: actions/setup-python@v4  
-        with:  
-          python-version: '3.10'  
-
-      - name: Install Dependencies  
-        run: |  
-          python -m pip install --upgrade pip  
-          if [ -f requirements.txt ]; then pip install -r requirements.txt; fi  
-
-      # One-line script  
-      - name: Run a one-line script  
-        run: echo "Starting script execution..."  
-
-      # Multi-line script  
-      - name: Run a multi-line script  
-        run: |  
-          echo "Executing Python script..."
-          echo "All stages completed successfully!"  
-
-      - name: Run Python Script  
-        run: python script.py  
+  deploy:
+    name: Production Deployment
+    needs: stage
+    runs-on: ubuntu-latest
+    steps:
+      - name: Deploy to Production
+        run: echo "Deploying to production environment..."
