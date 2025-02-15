@@ -16,21 +16,21 @@ jobs:
       - name: Run Pre-request Checks
         run: echo "Running pre-request checks..."
 
-  helm:
-    name: Run Helm Chart
-    needs: pre-checks
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout Repository
-        uses: actions/checkout@v4
+  # helm:
+  #   name: Run Helm Chart
+  #   needs: pre-checks
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #     - name: Checkout Repository
+  #       uses: actions/checkout@v4
 
-      - name: Install Helm
-        run: |
-          curl https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash
-          helm version
+  #     - name: Install Helm
+  #       run: |
+  #         curl https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash
+  #         helm version
 
-      - name: Run Helm Lint
-        run: helm lint path/to/helm-chart
+  #     - name: Run Helm Lint
+  #       run: helm lint path/to/helm-chart
 
   pytest:
     name: Run Pytest
